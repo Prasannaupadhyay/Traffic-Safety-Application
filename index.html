@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Urban Traffic Management</title>
+  <!-- Leaflet CSS for Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap');
+
+    * {
+      box-sizing: border-box;
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Roboto', sans-serif;
+      background: #121212;
+      color: #e0e0e0;
+      overflow: hidden;
+    }
+    a {
+      text-decoration: none;
+    }
+    .hidden {
+      display: none;
+    }
+    /* App Container */
+    #app-container {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+    /* Sidebar Navigation */
+    .sidebar {
+      width: 250px;
+      background: #1e1e1e;
+      display: flex;
+      flex-direction: column;
+      padding: 1rem;
+      border-right: 1px solid #333;
+    }
+    .sidebar h2 {
+      text-align: center;
+      margin-bottom: 2rem;
+      font-weight: 500;
+      font-size: 1.25rem;
+    }
+    .sidebar a {
+      color: #e0e0e0;
+      padding: 0.75rem;
+      margin: 0.25rem 0;
+      border-radius: 4px;
+      transition: background 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .sidebar a:hover,
+    .sidebar a.active {
+      background: #007bff;
+    }
+    /* Logout Button Style */
+    #logout-btn {
+      margin-top: auto;
+      background: #dc3545;
+      padding: 0.75rem;
+      border-radius: 4px;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      font-size: 1rem;
+    }
+    #logout-btn:hover {
+      background: #b02a37;
+    }
+    /* Main Content Area */
+    .main-content {
+      flex: 1;
+      padding: 1.5rem;
+      overflow-y: auto;
+      background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+      position: relative;
+    }
+    /* Background pattern for main content */
+    .main-content::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: url('https://www.transparenttextures.com/patterns/black-linen.png');
+      opacity: 0.05;
+      z-index: 0;
+    }
+    .main-content > * {
+      position: relative;
+      z-index: 1;
+    }
+    /* Sections */
+    .section {
+      animation: fadeIn 0.5s ease-in-out;
+    }
+    /* Map Section */
+    #map {
+      height: 400px;
+      margin-bottom: 1rem;
+      border-radius: 8px;
+    }
+    /* Section Cards */
+    .card {
+      background: #1e1e1e;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .card i {
+      font-size: 1.5rem;
+      color: #007bff;
+    }
+    .card h3 {
+      margin-top: 0;
+    }
+    /* Emergency Button */
+    .emergency-btn {
+      background: #dc3545;
+      color: #fff;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      font-size: 1rem;
+    }
+    .emergency-btn:hover {
+      background: #b02a37;
+    }
+
+    /* Additional styles for admin controls */
+    #admin-controls {
+      background: #1e1e1e;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    #admin-controls h1 {
+      color: #e0e0e0;
+      margin-bottom: 1.5rem;
+      font-size: 1.5rem;
+      font-weight: 500;
+    }
+
+    #admin-controls .card {
+      background: #2c2c2c;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    #admin-controls .card h3 {
+      color: #e0e0e0;
+      margin-top: 0;
+      margin-bottom: 1rem;
+      font-size: 1.25rem;
+    }
+
+    #admin-controls input {
+      width: 100%;
+      padding: 0.75rem;
+      margin: 0.5rem 0;
+      border: none;
+      border-radius: 4px;
+      background: #1e1e1e;
+      color: #e0e0e0;
+      font-family: 'Roboto', sans-serif;
+      font-size: 1rem;
+    }
+
+    #admin-controls input:focus {
+      outline: none;
+      box-shadow: 0 0 5px #007bff;
+    }
+
+    #admin-controls button {
+      width: 100%;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 4px;
+      background: #007bff;
+      color: #fff;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      transition: background 0.3s ease;
+      font-family: 'Roboto', sans-serif;
+      font-size: 1rem;
+    }
+
+    #admin-controls button:hover {
+      background: #0056b3;
+    }
+
+    #admin-controls .zone-list,
+    #admin-controls .update-list {
+      margin-top: 1rem;
+    }
+
+    #admin-controls .zone-list .card,
+    #admin-controls .update-list .card {
+      background: #1e1e1e;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    #admin-controls .zone-list .card p,
+    #admin-controls .update-list .card p {
+      color: #e0e0e0;
+      margin: 0;
+    }
+
+    #admin-controls .zone-list .card button,
+    #admin-controls .update-list .card button {
+      background: #dc3545;
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      font-family: 'Roboto', sans-serif;
+      font-size: 0.875rem;
+    }
+
+    #admin-controls .zone-list .card button:hover,
+    #admin-controls .update-list .card button:hover {
+      background: #b02a37;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Main App Container -->
+  <div id="app-container">
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+      <h2><i class="fa-solid fa-traffic-light"></i> Traffic Monitor</h2>
+      <a href="#" class="nav-link active" data-section="dashboard">
+        <i class="fa-solid fa-gauge-high"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="#" class="nav-link" data-section="updates">
+        <i class="fa-solid fa-road"></i>
+        <span>Traffic Updates</span>
+      </a>
+      <a href="#" class="nav-link" data-section="alerts">
+        <i class="fa-solid fa-exclamation-triangle"></i>
+        <span>High-Risk Zones</span>
+      </a>
+      <a href="#" class="nav-link" data-section="emergency">
+        <i class="fa-solid fa-bell"></i>
+        <span>Emergency</span>
+      </a>
+      <div id="logout-btn">
+        <i class="fa-solid fa-right-from-bracket"></i> Logout
+      </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+      <!-- Dashboard Section -->
+      <section id="dashboard" class="section">
+        <h1>Dashboard</h1>
+        <p>Welcome to the Urban Traffic Management System. Use the navigation to check traffic updates, view high-risk zones, or contact emergency services.</p>
+        <div id="map"></div>
+      </section>
+
+      <!-- Traffic Updates Section -->
+      <section id="updates" class="section hidden">
+        <h1>Real-time Traffic Updates</h1>
+        <div id="traffic-updates-container">
+          <!-- Traffic updates will be dynamically inserted here -->
+        </div>
+      </section>
+
+      <!-- High-Risk Zones Section -->
+      <section id="alerts" class="section hidden">
+        <h1>High-Risk Zones</h1>
+        <div id="risk-zones-container">
+          <!-- High-risk zones will be dynamically inserted here -->
+        </div>
+      </section>
+
+      <!-- Emergency Section -->
+      <section id="emergency" class="section hidden">
+        <h1>Emergency Services</h1>
+        <p>If you are in an emergency, please click the button below to get emergency contact details.</p>
+        <button class="emergency-btn" onclick="showEmergencyInfo()">
+          <i class="fa-solid fa-phone"></i> Contact Emergency Services
+        </button>
+        <div id="emergency-info" class="hidden" style="margin-top:1rem;">
+          <p><strong>Emergency Number:</strong> 100</p>
+          <p><strong>Local Dispatch:</strong> (01) 4244-000</p>
+        </div>
+      </section>
+
+      <!-- Admin Controls Section -->
+      <section id="admin-controls" class="section hidden">
+        <h1>Admin Controls</h1>
+        <div class="card">
+          <h3>Add/Update High-Risk Zones</h3>
+          <input type="text" id="zone-name" placeholder="Zone Name" />
+          <input type="text" id="zone-coords" placeholder="Coordinates (lat, lng)" />
+          <button onclick="addOrUpdateZone()">Add/Update Zone</button>
+          <div id="zone-list">
+            <!-- Existing zones will be dynamically inserted here -->
+          </div>
+        </div>
+        <div class="card">
+          <h3>Add/Update Traffic Updates</h3>
+          <input type="text" id="update-text" placeholder="Update Text" />
+          <button onclick="addOrUpdateTrafficUpdate()">Add/Update Traffic Update</button>
+          <div id="update-list">
+            <!-- Existing updates will be dynamically inserted here -->
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Leaflet JS for Map -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // Navigation Functionality
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        // Remove active class from all links
+        navLinks.forEach(lnk => lnk.classList.remove('active'));
+        this.classList.add('active');
+        // Show the selected section and hide others
+        const sectionId = this.getAttribute('data-section');
+        document.querySelectorAll('.section').forEach(sec => {
+          sec.classList.add('hidden');
+        });
+        document.getElementById(sectionId).classList.remove('hidden');
+
+        // Show admin controls if on Dashboard and user is admin
+        if (sectionId === 'dashboard' && localStorage.getItem('userRole') === 'admin') {
+          document.getElementById('admin-controls').classList.remove('hidden');
+        }
+      });
+    });
+
+    // Logout Functionality: Redirect to login page.
+    document.getElementById('logout-btn').addEventListener('click', function() {
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('userRole');
+      window.location.href = "login.html";
+    });
+
+    // Emergency Service Function
+    function showEmergencyInfo() {
+      document.getElementById('emergency-info').classList.toggle('hidden');
+    }
+
+    // Initialize Map with Leaflet (in the Dashboard)
+    let map; // Declare map globally so it can be accessed by other functions
+    let markers = []; // Array to store map markers
+
+    function initializeMap() {
+      map = L.map('map').setView([27.7172, 85.3240], 13);
+
+      // Load and display tile layer on the map
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+      }).addTo(map);
+
+      // Load high-risk zones from localStorage
+      updateMapMarkers();
+    }
+
+    // Function to update map markers
+    function updateMapMarkers() {
+      // Clear existing markers
+      markers.forEach(marker => map.removeLayer(marker));
+      markers = [];
+
+      // Load high-risk zones from localStorage
+      const riskZones = JSON.parse(localStorage.getItem('riskZones')) || [
+        { coords: [27.7200, 85.3200], message: 'Accident-prone intersection near Thapathali.' },
+        { coords: [27.7100, 85.3300], message: 'Frequent incidents reported around Teku Crossing.' }
+      ];
+
+      // Add new markers to the map
+      riskZones.forEach(zone => {
+        const marker = L.marker(zone.coords).addTo(map)
+          .bindPopup(zone.message);
+        markers.push(marker); // Store the marker in the array
+      });
+    }
+
+    // Function to validate coordinates
+    function isValidCoordinates(coords) {
+      // Check if the input is in the format "lat, lng"
+      const regex = /^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/;
+      return regex.test(coords);
+    }
+
+    // Function to add or update high-risk zones
+    function addOrUpdateZone() {
+      const zoneName = document.getElementById('zone-name').value;
+      const zoneCoordsInput = document.getElementById('zone-coords').value;
+
+      // Validate coordinates
+      if (!isValidCoordinates(zoneCoordsInput)) {
+        alert('Invalid coordinates. Please enter coordinates in the format "lat, lng".');
+        return; // Stop execution if coordinates are invalid
+      }
+
+      const zoneCoords = zoneCoordsInput.split(',').map(Number);
+
+      if (zoneName && zoneCoords.length === 2) {
+        let riskZones = JSON.parse(localStorage.getItem('riskZones')) || [];
+        riskZones.push({ coords: zoneCoords, message: zoneName });
+        localStorage.setItem('riskZones', JSON.stringify(riskZones));
+        alert('Zone added/updated successfully');
+        
+        // Update the UI dynamically
+        loadRiskZones();
+        loadZones();
+        updateMapMarkers(); // Update the map markers dynamically
+      } else {
+        alert('Invalid input. Please fill in all fields.');
+      }
+    }
+
+    // Function to remove a high-risk zone
+    function removeZone(index) {
+      let riskZones = JSON.parse(localStorage.getItem('riskZones')) || [];
+      riskZones.splice(index, 1); // Remove the zone at the specified index
+      localStorage.setItem('riskZones', JSON.stringify(riskZones));
+      alert('Zone removed successfully');
+      
+      // Update the UI dynamically
+      loadRiskZones();
+      loadZones();
+      updateMapMarkers(); // Update the map markers dynamically
+    }
+
+    // Function to add or update traffic updates
+    function addOrUpdateTrafficUpdate() {
+      const updateText = document.getElementById('update-text').value;
+
+      if (updateText) {
+        let trafficUpdates = JSON.parse(localStorage.getItem('trafficUpdates')) || [];
+        trafficUpdates.push(updateText);
+        localStorage.setItem('trafficUpdates', JSON.stringify(trafficUpdates));
+        alert('Traffic update added/updated successfully');
+        
+        // Update the UI dynamically
+        loadTrafficUpdates();
+        loadUpdates();
+      } else {
+        alert('Invalid input. Please fill in the update text.');
+      }
+    }
+
+    // Function to remove a traffic update
+    function removeUpdate(index) {
+      let trafficUpdates = JSON.parse(localStorage.getItem('trafficUpdates')) || [];
+      trafficUpdates.splice(index, 1); // Remove the update at the specified index
+      localStorage.setItem('trafficUpdates', JSON.stringify(trafficUpdates));
+      alert('Traffic update removed successfully');
+      
+      // Update the UI dynamically
+      loadTrafficUpdates();
+      loadUpdates();
+    }
+
+    // Load traffic updates from localStorage
+    function loadTrafficUpdates() {
+      const trafficUpdates = JSON.parse(localStorage.getItem('trafficUpdates')) || [];
+      const container = document.getElementById('traffic-updates-container');
+      container.innerHTML = '';
+
+      trafficUpdates.forEach(update => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <div>
+            <p><strong>Update:</strong> ${update}</p>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Load high-risk zones from localStorage
+    function loadRiskZones() {
+      const riskZones = JSON.parse(localStorage.getItem('riskZones')) || [];
+      const container = document.getElementById('risk-zones-container');
+      container.innerHTML = '';
+
+      riskZones.forEach(zone => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <i class="fa-solid fa-skull-crossbones"></i>
+          <div>
+            <p>${zone.message}</p>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Load and display existing zones in the Admin Controls section
+    function loadZones() {
+      const riskZones = JSON.parse(localStorage.getItem('riskZones')) || [];
+      const container = document.getElementById('zone-list');
+      container.innerHTML = '';
+
+      riskZones.forEach((zone, index) => {
+        const zoneItem = document.createElement('div');
+        zoneItem.className = 'card';
+        zoneItem.innerHTML = `
+          <div>
+            <p><strong>Zone:</strong> ${zone.message}</p>
+            <p><strong>Coordinates:</strong> ${zone.coords.join(', ')}</p>
+          </div>
+          <button onclick="removeZone(${index})">Remove</button>
+        `;
+        container.appendChild(zoneItem);
+      });
+    }
+
+    // Load and display existing traffic updates in the Admin Controls section
+    function loadUpdates() {
+      const trafficUpdates = JSON.parse(localStorage.getItem('trafficUpdates')) || [];
+      const container = document.getElementById('update-list');
+      container.innerHTML = '';
+
+      trafficUpdates.forEach((update, index) => {
+        const updateItem = document.createElement('div');
+        updateItem.className = 'card';
+        updateItem.innerHTML = `
+          <div>
+            <p><strong>Update:</strong> ${update}</p>
+          </div>
+          <button onclick="removeUpdate(${index})">Remove</button>
+        `;
+        container.appendChild(updateItem);
+      });
+    }
+
+    // Show admin controls if admin is logged in
+    if (localStorage.getItem('userRole') === 'admin') {
+      document.getElementById('admin-controls').classList.remove('hidden');
+    }
+
+    // Call these functions when the page loads
+    window.onload = function () {
+      // Initialize default data if localStorage is empty
+      if (!localStorage.getItem('riskZones')) {
+        localStorage.setItem('riskZones', JSON.stringify([
+          { coords: [27.7200, 85.3200], message: 'Accident-prone intersection near Thapathali.' },
+          { coords: [27.7100, 85.3300], message: 'Frequent incidents reported around Teku Crossing.' }
+        ]));
+      }
+
+      if (!localStorage.getItem('trafficUpdates')) {
+        localStorage.setItem('trafficUpdates', JSON.stringify([
+          'Heavy traffic reported near Durbar Marg due to construction work.',
+          'Smooth flow on Ring Road.'
+        ]));
+      }
+
+      // Load data and initialize the map
+      initializeMap();
+      loadTrafficUpdates();
+      loadRiskZones();
+      loadZones(); // Load existing zones
+      loadUpdates(); // Load existing traffic updates
+    };
+  </script>
+</body>
+</html>
