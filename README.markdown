@@ -73,5 +73,3 @@ The Urban Traffic Management System is a web-based application designed to monit
 4. Push to the branch (`git push origin feature-branch`).
 5. Open a pull request.
 
-## License
-This project is licensed under the MIT License.
